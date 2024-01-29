@@ -1,5 +1,7 @@
-package com.itg;
+package com.itg.messagemover;
 
+import com.itg.LoggerConfiguration;
+import com.itg.AlertUtils;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
@@ -19,7 +21,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BankMessageMover {
+public class BankMessageMover implements MessageMover {
     private Stage stage;
 
     static Logger logger = Logger.getLogger("BankMessageMover");
@@ -46,7 +48,6 @@ public class BankMessageMover {
     private String printerName;
 
 
-
     public BankMessageMover(Stage stage) {
         this.stage = stage;
     }
@@ -56,22 +57,22 @@ public class BankMessageMover {
     }
 
     public void setArchivationDir(String archivationDir) {
-        this.archivationDir =  Paths.get(archivationDir);
+        this.archivationDir = Paths.get(archivationDir);
     }
 
     public void setSboDir(String sboDir) {
-        this.sboDir =  Paths.get(sboDir);
+        this.sboDir = Paths.get(sboDir);
     }
 
     public void setBankDir(String bankDir) {
         this.bankDir = Paths.get(bankDir);
     }
 
-    public void setLoggingPath(String loggingPath){
+    public void setLoggingPath(String loggingPath) {
         configureLogger(loggingPath);
     }
 
-    public void setPrinterName(String printerName){
+    public void setPrinterName(String printerName) {
         this.printerName = printerName;
     }
 
@@ -99,7 +100,7 @@ public class BankMessageMover {
     }
 
     public void stop() {
-        if(scheduler != null){
+        if (scheduler != null) {
             scheduler.shutdown();
             scheduler = null;
             logger.log(Level.INFO, "Application stopped.");
@@ -134,7 +135,7 @@ public class BankMessageMover {
      *
      * @param fromBank If true, the files are copied from the bank directory to the SBO directory.
      */
-        void scanAndCopyFiles(boolean fromBank) {
+    void scanAndCopyFiles(boolean fromBank) {
         Path sourceDir = fromBank ? this.bankDir : this.sboDir;
         Path destinationDir = fromBank ? this.sboDir : this.bankDir;
 
@@ -152,7 +153,7 @@ public class BankMessageMover {
             Files.walkFileTree(sourceDir, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    if(dir.getFileName() == null){
+                    if (dir.getFileName() == null) {
                         return FileVisitResult.CONTINUE;
                     }
                     String dirName = dir.getFileName().toString();
@@ -194,7 +195,7 @@ public class BankMessageMover {
 
                         Set<String> commanNames = new HashSet<>(scannFolders);
                         commanNames.retainAll(fileStructure);
-                        if(commanNames.isEmpty()){
+                        if (commanNames.isEmpty()) {
                             return FileVisitResult.CONTINUE;
                         }
                         bankDestinationDir = commanNames.stream().findFirst().get();
@@ -207,7 +208,7 @@ public class BankMessageMover {
 
                         Set<String> commanNames = new HashSet<>(scannFolders);
                         commanNames.retainAll(fileStructure);
-                        if(!commanNames.isEmpty()){
+                        if (!commanNames.isEmpty()) {
                             return FileVisitResult.CONTINUE;
                         }
                     }
@@ -233,9 +234,6 @@ public class BankMessageMover {
                             copyFile(file, archiveFile);
                         } else {
                             copyFile(file, destinationFile);
-                            if (!(printerName == null || printerName.trim().isEmpty())) {
-                                PrintUtils.printFile(printerName, destinationFile, logger);
-                            }
                         }
                     }
 
