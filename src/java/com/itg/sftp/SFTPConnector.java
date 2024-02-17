@@ -1,65 +1,32 @@
 package com.itg.sftp;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 
-import java.io.FileInputStream;
-import java.util.Properties;
+import net.schmizz.sshj.SSHClient;
+
+import java.io.IOException;
 
 public class SFTPConnector {
 
-    private static final JSch jsch = new JSch();
-    private static Session session = null;
-    private static ChannelSftp channelSftp = null;
+    private SSHClient sshClient;
 
 
-    public static void init(SFTPConfig config) throws JSchException {
-        // Close existing session and channel if they are open
-        disconnect();
-//        if (session != null) {
-//            return;
-//        }
-        session = jsch.getSession(config.getUserName(), config.getHost(), config.getPort());
-        Properties keyConfigs = new Properties();
-        session.setConfig("kex", "diffie-hellman-group1-sha1");
-//        session.setConfig(keyConfigs);
-
-        session.setTimeout(10000);
-        session.setPassword(config.getPassword());
+    public synchronized SSHClient connect(SFTPConfig config) throws IOException {
+        if (sshClient == null) {
+            sshClient = new SSHClient();
+            sshClient.loadKnownHosts();
+        }
+        if (sshClient.isConnected()) {
+            return sshClient;
+        }
+        sshClient.connect(config.getHost());
+        sshClient.authPassword(config.getUserName(), config.getPassword());
+        return sshClient;
     }
 
-    public static ChannelSftp connect(SFTPConfig config) throws JSchException {
-        try {
-            init(config);
-
-            // Only connect if the session isn't already connected
-            if (!session.isConnected()) {
-                session.connect();
-            }
-
-            // Only open a new channel if it's not already open
-            if (channelSftp == null || !channelSftp.isConnected()) {
-                channelSftp = (ChannelSftp) session.openChannel("sftp");
-                channelSftp.connect();
-            }
-            return channelSftp;
-        } catch (Exception e) {
-            throw e;
+    public synchronized void disconnect() throws IOException {
+        if (sshClient != null) {
+            sshClient.disconnect();
         }
-
-
-    }
-
-    public static void disconnect() {
-        if (channelSftp != null && channelSftp.isConnected()) {
-            channelSftp.disconnect();
-        }
-        channelSftp = null;
-        if (session != null && session.isConnected()) {
-            session.disconnect();
-        }
-        session = null;
+        sshClient = null;
     }
 }

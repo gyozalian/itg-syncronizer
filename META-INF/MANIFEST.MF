@@ -4,4 +4,3 @@ Class-Path: javafx-base-17.0.6.jar javafx-controls-17.0.6.jar javafx-gra
  phics-17.0.6.jar javafx-graphics-17.0.6-win.jar javafx-fxml-17.0.6-win.
  jar javafx-fxml-17.0.6.jar javafx-base-17.0.6-win.jar javafx-controls-1
  7.0.6-win.jar
-

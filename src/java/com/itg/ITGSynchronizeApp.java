@@ -5,6 +5,7 @@ import com.itg.messagemover.BankMessageSFTPMover;
 import com.itg.printer.PrintApplication;
 import com.itg.sftp.SFTPConfig;
 import javafx.application.Application;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -87,8 +88,6 @@ public class ITGSynchronizeApp extends Application {
         Label scanIntervalLabel = new Label("Scan interval in seconds:");
         Label archivationPathLabel = new Label("Archivation Path:");
         Label loggingPathLabel = new Label("Logging Path:");
-        Label printerLabel = new Label("Printer name:");
-
 
         // TextFields for input
         TextField sboPathField = new TextField(prefs.get("sboPath", ""));
@@ -310,7 +309,7 @@ public class ITGSynchronizeApp extends Application {
             folderFields.add(newFolderField);
             vBox.getChildren().add(vBox.getChildren().size() - 2, newFolderField);
         });
-        vBox.getChildren().add(addButton);
+        //vBox.getChildren().add(addButton);
 
         // List to keep track of folder and printer fields
         List<Pair<TextField, TextField>> folderPrinterFields = new ArrayList<>();
@@ -388,24 +387,30 @@ public class ITGSynchronizeApp extends Application {
             String folderPrefs = folderFields.stream().map(TextField::getText).collect(Collectors.joining(","));
             prefs.put("folderFields", folderPrefs);
 
+            Task<Void> task = new Task<Void>() {
+                @Override
+                protected Void call() throws Exception {
+                    messageMover.start();
+                    Map<String, String> printerConfig = new HashMap<>();
+                    for (Pair<TextField, TextField> pair : folderPrinterFields) {
+                        String folder = pair.getKey().getText();
+                        String name = pair.getValue().getText();
+                        printerConfig.put(folder, name);
+                    }
 
-            messageMover.start();
-            Map<String, String> printerConfig = new HashMap<>();
-            for (Pair<TextField, TextField> pair : folderPrinterFields) {
-                String folder = pair.getKey().getText();
-                String name = pair.getValue().getText();
-                printerConfig.put(folder, name);
-            }
+                    try {
+                        PrintApplication printApplication = new PrintApplication(bankPath, printerConfig);
+                        printApplication.processEvents();
+                    } catch (IOException ignored) {
 
-            try {
-                PrintApplication printApplication = new PrintApplication(bankPath, printerConfig);
-                printApplication.processEvents();
-            } catch (IOException ignored) {
+                    }
+                    return null;
+                }
 
-            }
+            };
+            new Thread(task).start();
         });
         vBox.getChildren().add(startButton);
-
         return vBox;
     }
 
